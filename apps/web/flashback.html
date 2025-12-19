@@ -324,16 +324,23 @@
         }));
     }
 
-    // Generate images - using Picsum for now (guaranteed to work)
+    // Generate AI images using Pollinations.ai
     function generateImages(eventTitle, eventYear, eventText) {
-        // Use year as seed for consistent but unique images per event
-        return [
-            `https://picsum.photos/seed/${eventYear}1/800/500`,
-            `https://picsum.photos/seed/${eventYear}2/800/500`,
-            `https://picsum.photos/seed/${eventYear}3/800/500`,
-            `https://picsum.photos/seed/${eventYear}4/800/500`,
-            `https://picsum.photos/seed/${eventYear}5/800/500`
+        // Extract key words from the event text
+        const words = eventText.replace(/[^a-zA-Z0-9\s]/g, '').split(' ').slice(0, 8).join(' ');
+
+        const styles = [
+            'wide shot documentary photo',
+            'first person view photo',
+            'close up detail photo',
+            'behind the scenes photo',
+            'aftermath documentary photo'
         ];
+
+        return styles.map((style, i) => {
+            const prompt = `${words} ${eventYear} ${style} historical`;
+            return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=500&seed=${eventYear + i}&nologo=true`;
+        });
     }
 
     async function loadEvent(month, day, targetYear = null) {
@@ -404,11 +411,13 @@
             const img = document.createElement('img');
             img.className = i === 0 ? 'lens-img active' : 'lens-img';
             img.alt = lensNames[i];
+            img.onerror = () => {
+                // Fallback to Picsum if AI image fails
+                img.src = `https://picsum.photos/seed/${currentEvent.year}${i}/800/500`;
+            };
             img.src = url;
-            img.crossOrigin = 'anonymous';
             lensBox.appendChild(img);
             hasImage = true;
-            console.log('Added image:', i, url, img.className);
         });
 
         $('noImage').classList.toggle('hidden', hasImage);
