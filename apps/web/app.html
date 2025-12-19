@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashback Daily</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000; color: #fff; min-height: 100vh;
+            max-width: 430px; margin: 0 auto; overflow-x: hidden;
+        }
+        .screen { display: none; min-height: 100vh; }
+        .screen.active { display: flex; flex-direction: column; }
+
+        /* Home */
+        #home { justify-content: center; align-items: center; gap: 32px; padding: 20px; }
+        .logo h1 { font-size: 36px; font-weight: 700; letter-spacing: 4px; font-family: Georgia, serif; text-align: center; }
+        .logo p { font-size: 13px; color: #555; letter-spacing: 8px; margin-top: 8px; text-align: center; }
+        .actions { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        .action-btn {
+            display: flex; align-items: center; gap: 16px; padding: 16px 20px;
+            background: rgba(255,255,255,0.06); border: none; border-radius: 14px;
+            color: #fff; cursor: pointer; text-align: left; transition: all 0.2s;
+        }
+        .action-btn:hover { background: rgba(255,255,255,0.1); }
+        .action-btn:active { transform: scale(0.98); }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .action-btn .icon { font-size: 22px; width: 32px; text-align: center; }
+        .action-btn .text h3 { font-size: 17px; font-weight: 600; }
+        .action-btn .text p { font-size: 12px; color: #666; margin-top: 2px; }
+        .action-btn .arrow { margin-left: auto; color: #444; font-size: 20px; }
+
+        /* Date Picker */
+        .date-picker-wrap {
+            width: 100%; display: none; flex-direction: column; gap: 12px;
+            background: rgba(255,255,255,0.06); border-radius: 14px; padding: 20px;
+        }
+        .date-picker-wrap.active { display: flex; }
+        .date-picker-wrap input[type="date"] {
+            width: 100%; padding: 14px; border: none; border-radius: 10px;
+            background: rgba(255,255,255,0.1); color: #fff; font-size: 18px;
+            text-align: center; -webkit-appearance: none;
+        }
+        .date-picker-wrap input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1); cursor: pointer;
+        }
+        .date-picker-wrap button {
+            padding: 14px; border: none; border-radius: 10px;
+            background: #fff; color: #000; font-size: 16px; font-weight: 600; cursor: pointer;
+        }
+        .date-picker-wrap button:active { transform: scale(0.98); }
+        .cancel-btn { background: rgba(255,255,255,0.1) !important; color: #fff !important; }
+
+        /* Loading */
+        .loading { display: none; flex-direction: column; align-items: center; gap: 16px; padding: 40px; }
+        .loading.active { display: flex; }
+        .spinner {
+            width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #666; font-size: 14px; }
+
+        /* Error */
+        .error { display: none; padding: 16px; background: rgba(255,100,100,0.1); border-radius: 10px; margin-top: 16px; }
+        .error.active { display: block; }
+        .error p { color: #ff6b6b; font-size: 14px; text-align: center; }
+
+        /* Flashback */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 20px; position: sticky; top: 0; background: #000; z-index: 10;
+        }
+        .header button { background: none; border: none; color: #fff; font-size: 17px; cursor: pointer; padding: 8px; }
+        .header .back { font-size: 28px; }
+        .content { padding: 0 20px 40px; }
+        .date-label { text-align: center; font-size: 12px; color: #555; letter-spacing: 3px; margin-bottom: 16px; font-weight: 500; }
+
+        .lens-box {
+            position: relative; width: 100%; aspect-ratio: 16/10; border-radius: 16px;
+            overflow: hidden; background: #111; margin-bottom: 12px;
+        }
+        .lens-img {
+            width: 100%; height: 100%; object-fit: cover;
+            position: absolute; top: 0; left: 0;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .lens-img.active { opacity: 1; }
+        .lens-placeholder {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #444; font-size: 14px;
+        }
+        .lens-placeholder.hidden { display: none; }
+
+        .dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 16px; }
+        .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); cursor: pointer; transition: all 0.3s;
+        }
+        .dot.active { background: #fff; width: 24px; border-radius: 4px; }
+
+        .pills { display: flex; justify-content: center; gap: 6px; margin-bottom: 28px; flex-wrap: wrap; }
+        .pill {
+            padding: 8px 14px; border-radius: 20px; background: rgba(255,255,255,0.08);
+            border: none; color: #999; font-size: 12px; cursor: pointer; transition: all 0.2s; font-weight: 500;
+        }
+        .pill.active { background: #fff; color: #000; font-weight: 600; }
+
+        .title {
+            font-size: 26px; font-weight: 700; font-family: Georgia, serif;
+            text-align: center; margin-bottom: 16px; line-height: 1.3;
+        }
+        .year-wrap { text-align: center; margin-bottom: 20px; }
+        .year {
+            display: inline-block; padding: 8px 20px; background: #fff; color: #000;
+            border-radius: 20px; font-size: 15px; font-weight: 700; font-family: 'SF Mono', 'Menlo', monospace;
+        }
+        .summary {
+            font-size: 16px; line-height: 1.7; color: rgba(255,255,255,0.8);
+            text-align: center; margin-bottom: 20px; padding: 0 10px;
+        }
+        .disclosure {
+            display: flex; align-items: center; justify-content: center;
+            gap: 6px; color: #555; font-size: 11px; margin-bottom: 28px;
+        }
+
+        .buttons { display: flex; justify-content: center; gap: 12px; }
+        .btn-secondary {
+            padding: 14px 24px; border-radius: 25px; background: rgba(255,255,255,0.08);
+            border: none; color: #fff; font-size: 14px; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; font-weight: 500;
+        }
+        .btn-primary {
+            padding: 14px 24px; border-radius: 25px; background: #fff;
+            border: none; color: #000; font-size: 14px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; gap: 8px;
+        }
+        .btn-secondary:active, .btn-primary:active { transform: scale(0.96); }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95); z-index: 100; padding: 20px;
+            max-width: 430px; margin: 0 auto;
+        }
+        .modal.active { display: block; }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-top: 20px; }
+        .modal-head h2 { font-size: 20px; font-weight: 600; }
+        .modal-close { background: none; border: none; color: #0a84ff; font-size: 17px; cursor: pointer; font-weight: 500; }
+        .source-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px; background: rgba(255,255,255,0.06); border-radius: 12px;
+            margin-bottom: 10px; color: #fff; text-decoration: none;
+        }
+        .source-item:hover { background: rgba(255,255,255,0.1); }
+        .source-item span:last-child { color: #0a84ff; }
+
+        /* Saved indicator */
+        .saved-toast {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+            background: #333; padding: 12px 24px; border-radius: 25px;
+            font-size: 14px; display: none; z-index: 200;
+        }
+        .saved-toast.active { display: block; animation: fadeInOut 2s forwards; }
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; }
+            20%, 80% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HOME SCREEN -->
+<div id="home" class="screen active">
+    <div class="logo">
+        <h1>FLASHBACK</h1>
+        <p>DAILY</p>
+    </div>
+    <div class="actions">
+        <button class="action-btn" id="todayBtn" onclick="fetchToday()">
+            <span class="icon">📅</span>
+            <div class="text"><h3>Today</h3><p id="todayDate"></p></div>
+            <span class="arrow">›</span>
+        </button>
+        <button class="action-btn" onclick="toggleDatePicker()">
+            <span class="icon">🗓️</span>
+            <div class="text"><h3>Pick a Date</h3><p>Choose any date in history</p></div>
+            <span class="arrow">›</span>
+        </button>
+        <button class="action-btn" onclick="fetchRandom()">
+            <span class="icon">🎲</span>
+            <div class="text"><h3>Random</h3><p>Surprise me</p></div>
+            <span class="arrow">›</span>
+        </button>
+    </div>
+
+    <div class="date-picker-wrap" id="datePicker">
+        <input type="date" id="dateInput">
+        <button onclick="fetchSelectedDate()">Generate Flashback</button>
+        <button class="cancel-btn" onclick="toggleDatePicker()">Cancel</button>
+    </div>
+
+    <div class="loading" id="homeLoading">
+        <div class="spinner"></div>
+        <p>Finding the most significant event...</p>
+    </div>
+
+    <div class="error" id="homeError">
+        <p id="errorText"></p>
+    </div>
+</div>
+
+<!-- FLASHBACK SCREEN -->
+<div id="flashback" class="screen">
+    <div class="header">
+        <button class="back" onclick="goHome()">‹</button>
+        <button onclick="saveFlashback()">☆</button>
+    </div>
+    <div class="content">
+        <div class="date-label" id="dateLabel"></div>
+
+        <div class="lens-box" id="lensBox">
+            <div class="lens-placeholder" id="lensPlaceholder">No image available</div>
+        </div>
+
+        <div class="dots" id="dots"></div>
+        <div class="pills" id="pills"></div>
+
+        <h1 class="title" id="eventTitle"></h1>
+        <div class="year-wrap"><span class="year" id="eventYear"></span></div>
+        <p class="summary" id="eventSummary"></p>
+        <div class="disclosure"><span>✨</span><span>AI Recreation</span></div>
+
+        <div class="buttons">
+            <button class="btn-secondary" onclick="showSources()">🔗 Sources</button>
+            <button class="btn-primary" onclick="shareEvent()">↗ Share</button>
+        </div>
+    </div>
+</div>
+
+<!-- SOURCES MODAL -->
+<div class="modal" id="sourcesModal">
+    <div class="modal-head">
+        <h2>Sources</h2>
+        <button class="modal-close" onclick="closeSources()">Done</button>
+    </div>
+    <div id="sourcesList"></div>
+</div>
+
+<!-- TOAST -->
+<div class="saved-toast" id="toast"></div>
+
+<script>
+const API_BASE = 'http://localhost:8000';
+let currentFlashback = null;
+let currentLens = 0;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    const today = new Date();
+    document.getElementById('todayDate').textContent = formatDisplayDate(today);
+    document.getElementById('dateInput').value = today.toISOString().split('T')[0];
+    document.getElementById('dateInput').max = today.toISOString().split('T')[0];
+});
+
+function formatDisplayDate(date) {
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+}
+
+function formatAPIDate(date) {
+    return date.toISOString().split('T')[0];
+}
+
+// Navigation
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function goHome() {
+    showScreen('home');
+    hideLoading();
+    hideError();
+}
+
+function toggleDatePicker() {
+    document.getElementById('datePicker').classList.toggle('active');
+}
+
+function showLoading() {
+    document.getElementById('homeLoading').classList.add('active');
+    document.querySelectorAll('.action-btn').forEach(b => b.disabled = true);
+}
+
+function hideLoading() {
+    document.getElementById('homeLoading').classList.remove('active');
+    document.querySelectorAll('.action-btn').forEach(b => b.disabled = false);
+}
+
+function showError(msg) {
+    document.getElementById('errorText').textContent = msg;
+    document.getElementById('homeError').classList.add('active');
+}
+
+function hideError() {
+    document.getElementById('homeError').classList.remove('active');
+}
+
+function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.remove('active');
+    void toast.offsetWidth; // Trigger reflow
+    toast.classList.add('active');
+}
+
+// API Calls
+async function fetchFlashback(endpoint) {
+    showLoading();
+    hideError();
+    document.getElementById('datePicker').classList.remove('active');
+
+    try {
+        const response = await fetch(`${API_BASE}${endpoint}`);
+        const data = await response.json();
+
+        if (data.status === 'ready' && data.scene) {
+            currentFlashback = data.scene;
+            displayFlashback(data.scene);
+        } else {
+            throw new Error(data.message || 'Failed to load flashback');
+        }
+    } catch (e) {
+        console.error(e);
+        if (e.message.includes('Failed to fetch')) {
+            showError('Cannot connect to server. Make sure the API is running on localhost:8000');
+        } else {
+            showError(e.message || 'Something went wrong');
+        }
+    } finally {
+        hideLoading();
+    }
+}
+
+function fetchToday() {
+    fetchFlashback('/v1/flashback/today');
+}
+
+function fetchRandom() {
+    fetchFlashback('/v1/flashback/random');
+}
+
+function fetchSelectedDate() {
+    const date = document.getElementById('dateInput').value;
+    if (date) {
+        fetchFlashback(`/v1/flashback?date=${date}`);
+    }
+}
+
+// Display
+function displayFlashback(scene) {
+    currentLens = 0;
+
+    // Format date
+    const [year, month, day] = scene.date.split('-');
+    const dateObj = new Date(year, month - 1, day);
+    document.getElementById('dateLabel').textContent = formatDisplayDate(dateObj).toUpperCase();
+
+    document.getElementById('eventTitle').textContent = scene.title;
+    document.getElementById('eventYear').textContent = scene.year || '';
+    document.getElementById('eventSummary').textContent = scene.summary;
+
+    // Build lenses
+    const lensBox = document.getElementById('lensBox');
+    const placeholder = document.getElementById('lensPlaceholder');
+
+    // Clear old images
+    lensBox.querySelectorAll('.lens-img').forEach(el => el.remove());
+
+    let hasImages = false;
+    scene.lenses.forEach((lens, i) => {
+        if (lens.image_url) {
+            hasImages = true;
+            const img = document.createElement('img');
+            img.className = 'lens-img' + (i === 0 ? ' active' : '');
+            img.src = lens.image_url;
+            img.alt = lens.name;
+            img.onerror = () => img.style.display = 'none';
+            lensBox.insertBefore(img, placeholder);
+        }
+    });
+
+    placeholder.classList.toggle('hidden', hasImages);
+
+    // Dots
+    document.getElementById('dots').innerHTML = scene.lenses.map((_, i) =>
+        `<div class="dot ${i === 0 ? 'active' : ''}" onclick="selectLens(${i})"></div>`
+    ).join('');
+
+    // Pills
+    document.getElementById('pills').innerHTML = scene.lenses.map((lens, i) =>
+        `<button class="pill ${i === 0 ? 'active' : ''}" onclick="selectLens(${i})">${lens.name}</button>`
+    ).join('');
+
+    showScreen('flashback');
+    setupSwipe();
+}
+
+function selectLens(i) {
+    currentLens = i;
+    document.querySelectorAll('.lens-img').forEach((el, idx) => el.classList.toggle('active', idx === i));
+    document.querySelectorAll('.dot').forEach((el, idx) => el.classList.toggle('active', idx === i));
+    document.querySelectorAll('.pill').forEach((el, idx) => el.classList.toggle('active', idx === i));
+}
+
+function setupSwipe() {
+    const box = document.getElementById('lensBox');
+    let startX = 0;
+    box.ontouchstart = e => startX = e.touches[0].clientX;
+    box.ontouchend = e => {
+        const diff = startX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) {
+            if (diff > 0 && currentLens < 4) selectLens(currentLens + 1);
+            else if (diff < 0 && currentLens > 0) selectLens(currentLens - 1);
+        }
+    };
+}
+
+// Sources
+function showSources() {
+    if (!currentFlashback) return;
+    document.getElementById('sourcesList').innerHTML = currentFlashback.sources.map(s =>
+        `<a href="${s.url}" target="_blank" class="source-item"><span>${s.label}</span><span>↗</span></a>`
+    ).join('');
+    document.getElementById('sourcesModal').classList.add('active');
+}
+
+function closeSources() {
+    document.getElementById('sourcesModal').classList.remove('active');
+}
+
+// Share
+async function shareEvent() {
+    if (!currentFlashback) return;
+    const text = `${currentFlashback.title} (${currentFlashback.year})\n\n${currentFlashback.summary}\n\n🔗 ${currentFlashback.sources[0]?.url || ''}\n\n✨ via Flashback Daily`;
+
+    if (navigator.share) {
+        try {
+            await navigator.share({ text });
+        } catch (e) {}
+    } else {
+        await navigator.clipboard.writeText(text);
+        showToast('Copied to clipboard!');
+    }
+}
+
+// Save
+function saveFlashback() {
+    if (!currentFlashback) return;
+    let saved = JSON.parse(localStorage.getItem('flashbacks') || '[]');
+    if (!saved.find(s => s.scene_id === currentFlashback.scene_id)) {
+        saved.push(currentFlashback);
+        localStorage.setItem('flashbacks', JSON.stringify(saved));
+    }
+    showToast('Saved to library!');
+}
+</script>
+</body>
+</html>
