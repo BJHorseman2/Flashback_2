@@ -122,10 +122,11 @@
     </div>
 
     <div id="dateSection">
-        <label>Select a month and day</label>
+        <label>Select a date in history</label>
         <div class="date-inputs">
             <select id="monthSelect"></select>
             <select id="daySelect"></select>
+            <select id="yearSelect"></select>
         </div>
         <button id="goBtn">Generate Flashback</button>
         <button id="cancelBtn">Cancel</button>
@@ -190,6 +191,7 @@
     const dateSection = $('dateSection');
     const monthSelect = $('monthSelect');
     const daySelect = $('daySelect');
+    const yearSelect = $('yearSelect');
     const modal = $('modal');
     const toast = $('toast');
 
@@ -220,6 +222,16 @@
             daySelect.appendChild(opt);
         }
 
+        // Populate year dropdown (1900 to current year)
+        const currentYear = now.getFullYear();
+        for (let y = currentYear; y >= 1900; y--) {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            if (y === 1969) opt.selected = true; // Default to an interesting year
+            yearSelect.appendChild(opt);
+        }
+
         // Event listeners
         $('todayBtn').onclick = () => {
             const d = new Date();
@@ -237,13 +249,15 @@
         $('goBtn').onclick = () => {
             const m = parseInt(monthSelect.value);
             const d = parseInt(daySelect.value);
-            loadEvent(m, d);
+            const y = parseInt(yearSelect.value);
+            loadEvent(m, d, y);
         };
 
         $('randomBtn').onclick = () => {
             const m = Math.floor(Math.random() * 12) + 1;
             const d = Math.floor(Math.random() * 28) + 1;
-            loadEvent(m, d);
+            const y = Math.floor(Math.random() * (2020 - 1900)) + 1900;
+            loadEvent(m, d, y);
         };
 
         $('backBtn').onclick = goHome;
@@ -330,31 +344,45 @@
         }
     }
 
-    // Load event for a date
-    async function loadEvent(month, day) {
+    // Load event for a date (year is optional - if provided, finds event from that year or closest)
+    async function loadEvent(month, day, targetYear = null) {
         showLoading();
 
         try {
             const events = await fetchEvents(month, day);
             if (!events.length) throw new Error('No events found for this date');
 
-            // Sort by extract length (longer = more significant)
-            events.sort((a, b) => {
-                const aLen = a.pages?.[0]?.extract?.length || 0;
-                const bLen = b.pages?.[0]?.extract?.length || 0;
-                return bLen - aLen;
-            });
+            let selectedEvent;
 
-            const event = events[0];
-            const page = event.pages?.[0] || {};
+            if (targetYear) {
+                // Find event from the exact year or closest year
+                const exactMatch = events.find(e => e.year === targetYear);
+                if (exactMatch) {
+                    selectedEvent = exactMatch;
+                } else {
+                    // Find closest year
+                    events.sort((a, b) => Math.abs(a.year - targetYear) - Math.abs(b.year - targetYear));
+                    selectedEvent = events[0];
+                }
+            } else {
+                // No year specified - sort by significance (extract length)
+                events.sort((a, b) => {
+                    const aLen = a.pages?.[0]?.extract?.length || 0;
+                    const bLen = b.pages?.[0]?.extract?.length || 0;
+                    return bLen - aLen;
+                });
+                selectedEvent = events[0];
+            }
+
+            const page = selectedEvent.pages?.[0] || {};
             const images = await getImages(page.title || '');
 
             currentEvent = {
                 month,
                 day,
-                year: event.year,
-                title: page.title || event.text.substring(0, 60),
-                summary: event.text,
+                year: selectedEvent.year,
+                title: page.title || selectedEvent.text.substring(0, 60),
+                summary: selectedEvent.text,
                 wikiUrl: page.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title || '')}`,
                 images
             };
