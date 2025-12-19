@@ -326,20 +326,17 @@
 
     // Generate images using Pollinations.ai (free, no API key, works from browser)
     function generateImages(eventTitle, eventYear, eventText) {
-        const shortText = eventText.substring(0, 80);
+        // Clean text for prompt
+        const cleanText = eventText.replace(/[^\w\s]/g, '').substring(0, 60);
 
-        const lensPrompts = [
-            `Historical photo ${eventYear}: ${shortText}, wide shot, photorealistic, documentary`,
-            `Historical photo ${eventYear}: ${shortText}, first person view, immersive`,
-            `Historical photo ${eventYear}: ${shortText}, close-up detail, sharp focus`,
-            `Historical photo ${eventYear}: ${shortText}, behind the scenes, candid`,
-            `Historical photo ${eventYear}: ${shortText}, aftermath, reflective`
-        ];
+        const lensStyles = ['wide angle', 'pov', 'closeup', 'candid', 'documentary'];
 
-        // Pollinations.ai generates images from URL - no API call needed
-        return lensPrompts.map((prompt, i) => {
+        return lensStyles.map((style, i) => {
+            const prompt = `${cleanText} ${eventYear} ${style} historical photo`;
             const encoded = encodeURIComponent(prompt);
-            return `https://image.pollinations.ai/prompt/${encoded}?width=800&height=500&seed=${eventYear + i}&nologo=true`;
+            // Add timestamp to prevent caching issues
+            const seed = eventYear * 100 + i;
+            return `https://image.pollinations.ai/prompt/${encoded}?width=800&height=500&seed=${seed}&nologo=true&t=${Date.now()}`;
         });
     }
 
@@ -411,14 +408,24 @@
                 hasImage = true;
                 const img = document.createElement('img');
                 img.className = 'lens-img' + (i === 0 ? ' active' : '');
-                img.src = url;
                 img.alt = lensNames[i];
-                img.onerror = () => { img.style.display = 'none'; };
+                img.style.background = '#222';
+                // Set src after appending to DOM
+                img.onload = () => {
+                    img.style.background = 'transparent';
+                    console.log('Image loaded:', i);
+                };
+                img.onerror = () => {
+                    console.log('Image error:', i, url);
+                    img.src = `https://picsum.photos/seed/${currentEvent.year + i}/800/500`;
+                };
                 lensBox.appendChild(img);
+                img.src = url;
             }
         });
 
-        $('noImage').classList.toggle('hidden', hasImage);
+        // Always show lens box, images will load
+        $('noImage').classList.add('hidden');
 
         $('dots').innerHTML = lensNames.map((_, i) =>
             `<div class="dot${i === 0 ? ' active' : ''}" data-i="${i}"></div>`
