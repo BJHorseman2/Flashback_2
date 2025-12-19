@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashback Daily</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #000; color: #fff; min-height: 100vh; max-width: 430px; margin: 0 auto; }
+        .screen { display: none; min-height: 100vh; }
+        .screen.active { display: flex; flex-direction: column; }
+        #home { justify-content: center; align-items: center; gap: 32px; padding: 20px; }
+        .logo h1 { font-size: 36px; font-weight: 700; letter-spacing: 4px; font-family: Georgia, serif; text-align: center; }
+        .logo p { font-size: 13px; color: #555; letter-spacing: 8px; margin-top: 8px; text-align: center; }
+        .actions { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        .action-btn { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: rgba(255,255,255,0.06); border: none; border-radius: 14px; color: #fff; cursor: pointer; text-align: left; }
+        .action-btn:disabled { opacity: 0.5; }
+        .action-btn .icon { font-size: 22px; width: 32px; text-align: center; }
+        .action-btn .text h3 { font-size: 17px; font-weight: 600; }
+        .action-btn .text p { font-size: 12px; color: #666; margin-top: 2px; }
+        .action-btn .arrow { margin-left: auto; color: #444; font-size: 20px; }
+        .date-picker-wrap { width: 100%; display: none; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.06); border-radius: 14px; padding: 20px; }
+        .date-picker-wrap.active { display: flex; }
+        .date-picker-wrap input { width: 100%; padding: 14px; border: none; border-radius: 10px; background: rgba(255,255,255,0.1); color: #fff; font-size: 18px; text-align: center; }
+        .date-picker-wrap input::-webkit-calendar-picker-indicator { filter: invert(1); }
+        .date-picker-wrap button { padding: 14px; border: none; border-radius: 10px; background: #fff; color: #000; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .cancel-btn { background: rgba(255,255,255,0.1) !important; color: #fff !important; }
+        .loading { display: none; flex-direction: column; align-items: center; gap: 16px; padding: 40px; }
+        .loading.active { display: flex; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #666; font-size: 14px; }
+        .error { display: none; padding: 16px; background: rgba(255,100,100,0.1); border-radius: 10px; margin-top: 16px; text-align: center; }
+        .error.active { display: block; color: #ff6b6b; font-size: 14px; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; position: sticky; top: 0; background: #000; z-index: 10; }
+        .header button { background: none; border: none; color: #fff; font-size: 17px; cursor: pointer; padding: 8px; }
+        .header .back { font-size: 28px; }
+        .content { padding: 0 20px 40px; }
+        .date-label { text-align: center; font-size: 12px; color: #555; letter-spacing: 3px; margin-bottom: 16px; font-weight: 500; }
+        .lens-box { position: relative; width: 100%; aspect-ratio: 16/10; border-radius: 16px; overflow: hidden; background: #111; margin-bottom: 12px; }
+        .lens-img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; opacity: 0; transition: opacity 0.3s; }
+        .lens-img.active { opacity: 1; }
+        .lens-placeholder { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a1a2e, #16213e); color: #444; font-size: 14px; }
+        .lens-placeholder.hidden { display: none; }
+        .dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 16px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); cursor: pointer; transition: all 0.3s; }
+        .dot.active { background: #fff; width: 24px; border-radius: 4px; }
+        .pills { display: flex; justify-content: center; gap: 6px; margin-bottom: 28px; flex-wrap: wrap; }
+        .pill { padding: 8px 14px; border-radius: 20px; background: rgba(255,255,255,0.08); border: none; color: #999; font-size: 12px; cursor: pointer; font-weight: 500; }
+        .pill.active { background: #fff; color: #000; font-weight: 600; }
+        .title { font-size: 26px; font-weight: 700; font-family: Georgia, serif; text-align: center; margin-bottom: 16px; line-height: 1.3; }
+        .year-wrap { text-align: center; margin-bottom: 20px; }
+        .year { display: inline-block; padding: 8px 20px; background: #fff; color: #000; border-radius: 20px; font-size: 15px; font-weight: 700; font-family: monospace; }
+        .summary { font-size: 16px; line-height: 1.7; color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 20px; }
+        .disclosure { display: flex; align-items: center; justify-content: center; gap: 6px; color: #555; font-size: 11px; margin-bottom: 28px; }
+        .buttons { display: flex; justify-content: center; gap: 12px; }
+        .btn-secondary { padding: 14px 24px; border-radius: 25px; background: rgba(255,255,255,0.08); border: none; color: #fff; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .btn-primary { padding: 14px 24px; border-radius: 25px; background: #fff; border: none; color: #000; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 100; padding: 20px; max-width: 430px; margin: 0 auto; }
+        .modal.active { display: block; }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-top: 20px; }
+        .modal-head h2 { font-size: 20px; }
+        .modal-close { background: none; border: none; color: #0a84ff; font-size: 17px; cursor: pointer; }
+        .source-item { display: flex; justify-content: space-between; padding: 16px; background: rgba(255,255,255,0.06); border-radius: 12px; margin-bottom: 10px; color: #fff; text-decoration: none; }
+        .source-item span:last-child { color: #0a84ff; }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 25px; font-size: 14px; display: none; }
+        .toast.active { display: block; animation: fade 2s forwards; }
+        @keyframes fade { 0%,100% { opacity: 0; } 20%,80% { opacity: 1; } }
+    </style>
+</head>
+<body>
+<div id="home" class="screen active">
+    <div class="logo"><h1>FLASHBACK</h1><p>DAILY</p></div>
+    <div class="actions">
+        <button class="action-btn" onclick="fetchToday()"><span class="icon">📅</span><div class="text"><h3>Today</h3><p id="todayLabel"></p></div><span class="arrow">›</span></button>
+        <button class="action-btn" onclick="togglePicker()"><span class="icon">🗓️</span><div class="text"><h3>Pick a Date</h3><p>Any date in history</p></div><span class="arrow">›</span></button>
+        <button class="action-btn" onclick="fetchRandom()"><span class="icon">🎲</span><div class="text"><h3>Random</h3><p>Surprise me</p></div><span class="arrow">›</span></button>
+    </div>
+    <div class="date-picker-wrap" id="picker">
+        <input type="date" id="dateInput">
+        <button onclick="fetchDate()">Generate Flashback</button>
+        <button class="cancel-btn" onclick="togglePicker()">Cancel</button>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div><p>Finding the biggest event...</p></div>
+    <div class="error" id="error"></div>
+</div>
+<div id="flashback" class="screen">
+    <div class="header"><button class="back" onclick="goHome()">‹</button><button onclick="save()">☆</button></div>
+    <div class="content">
+        <div class="date-label" id="dateLabel"></div>
+        <div class="lens-box" id="lensBox"><div class="lens-placeholder" id="placeholder">No image</div></div>
+        <div class="dots" id="dots"></div>
+        <div class="pills" id="pills"></div>
+        <h1 class="title" id="title"></h1>
+        <div class="year-wrap"><span class="year" id="year"></span></div>
+        <p class="summary" id="summary"></p>
+        <div class="disclosure"><span>✨</span><span>AI Recreation</span></div>
+        <div class="buttons">
+            <button class="btn-secondary" onclick="showSources()">🔗 Sources</button>
+            <button class="btn-primary" onclick="share()">↗ Share</button>
+        </div>
+    </div>
+</div>
+<div class="modal" id="modal">
+    <div class="modal-head"><h2>Sources</h2><button class="modal-close" onclick="closeSources()">Done</button></div>
+    <div id="sources"></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let current = null, lens = 0;
+const $ = id => document.getElementById(id);
+
+document.addEventListener('DOMContentLoaded', () => {
+    const d = new Date();
+    $('todayLabel').textContent = d.toLocaleDateString('en-US', {month:'long',day:'numeric'});
+    $('dateInput').value = d.toISOString().split('T')[0];
+    $('dateInput').max = d.toISOString().split('T')[0];
+});
+
+function goHome() { $('home').classList.add('active'); $('flashback').classList.remove('active'); }
+function togglePicker() { $('picker').classList.toggle('active'); }
+function showLoading() { $('loading').classList.add('active'); $('error').classList.remove('active'); document.querySelectorAll('.action-btn').forEach(b=>b.disabled=true); }
+function hideLoading() { $('loading').classList.remove('active'); document.querySelectorAll('.action-btn').forEach(b=>b.disabled=false); }
+function showError(msg) { $('error').textContent = msg; $('error').classList.add('active'); }
+function toast(msg) { $('toast').textContent = msg; $('toast').classList.remove('active'); void $('toast').offsetWidth; $('toast').classList.add('active'); }
+
+async function fetchEvents(month, day) {
+    const res = await fetch(`https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${month}/${day}`);
+    const data = await res.json();
+    return data.events || [];
+}
+
+async function getImages(title) {
+    const t = encodeURIComponent(title.replace(/ /g,'_'));
+    const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/media-list/${t}`);
+    const data = await res.json();
+    let imgs = [];
+    if (data.items) {
+        for (let item of data.items) {
+            let src = item.srcset?.[0]?.src || item.src;
+            if (src) {
+                if (src.startsWith('//')) src = 'https:' + src;
+                if (!src.includes('.svg')) imgs.push(src);
+            }
+            if (imgs.length >= 5) break;
+        }
+    }
+    while (imgs.length < 5) imgs.push(null);
+    return imgs;
+}
+
+async function loadFlashback(month, day, year = null) {
+    showLoading();
+    $('picker').classList.remove('active');
+    try {
+        const events = await fetchEvents(month, day);
+        if (!events.length) throw new Error('No events found');
+
+        // Pick best event (longest description = most significant)
+        events.sort((a,b) => (b.pages?.[0]?.extract?.length||0) - (a.pages?.[0]?.extract?.length||0));
+        const ev = events[0];
+        const page = ev.pages?.[0] || {};
+
+        const images = await getImages(page.title || ev.text);
+        const lensNames = ['Wide','POV','Detail','Behind','After'];
+
+        current = {
+            date: `${year||ev.year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`,
+            title: page.title || ev.text.slice(0,50),
+            year: ev.year,
+            summary: ev.text,
+            sources: [{label:'Wikipedia', url: page.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title)}`}],
+            lenses: lensNames.map((name,i) => ({name, url: images[i]}))
+        };
+
+        display();
+    } catch(e) {
+        showError(e.message || 'Failed to load');
+    }
+    hideLoading();
+}
+
+function display() {
+    lens = 0;
+    const d = new Date(current.date);
+    $('dateLabel').textContent = d.toLocaleDateString('en-US',{month:'long',day:'numeric'}).toUpperCase();
+    $('title').textContent = current.title;
+    $('year').textContent = current.year;
+    $('summary').textContent = current.summary;
+
+    const box = $('lensBox');
+    box.querySelectorAll('.lens-img').forEach(e=>e.remove());
+    let hasImg = false;
+    current.lenses.forEach((l,i) => {
+        if (l.url) {
+            hasImg = true;
+            const img = document.createElement('img');
+            img.className = 'lens-img' + (i===0?' active':'');
+            img.src = l.url;
+            img.onerror = () => img.style.display = 'none';
+            box.insertBefore(img, $('placeholder'));
+        }
+    });
+    $('placeholder').classList.toggle('hidden', hasImg);
+
+    $('dots').innerHTML = current.lenses.map((_,i) => `<div class="dot${i===0?' active':''}" onclick="selectLens(${i})"></div>`).join('');
+    $('pills').innerHTML = current.lenses.map((l,i) => `<button class="pill${i===0?' active':''}" onclick="selectLens(${i})">${l.name}</button>`).join('');
+
+    $('home').classList.remove('active');
+    $('flashback').classList.add('active');
+
+    // Swipe
+    let startX;
+    box.ontouchstart = e => startX = e.touches[0].clientX;
+    box.ontouchend = e => {
+        const diff = startX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) selectLens(lens + (diff > 0 ? 1 : -1));
+    };
+}
+
+function selectLens(i) {
+    if (i < 0 || i > 4) return;
+    lens = i;
+    document.querySelectorAll('.lens-img').forEach((el,idx) => el.classList.toggle('active', idx===i));
+    document.querySelectorAll('.dot').forEach((el,idx) => el.classList.toggle('active', idx===i));
+    document.querySelectorAll('.pill').forEach((el,idx) => el.classList.toggle('active', idx===i));
+}
+
+function fetchToday() { const d = new Date(); loadFlashback(d.getMonth()+1, d.getDate()); }
+function fetchRandom() { loadFlashback(Math.floor(Math.random()*12)+1, Math.floor(Math.random()*28)+1); }
+function fetchDate() { const [y,m,d] = $('dateInput').value.split('-'); loadFlashback(+m, +d, +y); }
+
+function showSources() { $('sources').innerHTML = current.sources.map(s => `<a href="${s.url}" target="_blank" class="source-item"><span>${s.label}</span><span>↗</span></a>`).join(''); $('modal').classList.add('active'); }
+function closeSources() { $('modal').classList.remove('active'); }
+function share() { navigator.clipboard.writeText(`${current.title} (${current.year})\n\n${current.summary}\n\n✨ Flashback Daily`); toast('Copied!'); }
+function save() { let s = JSON.parse(localStorage.getItem('fb')||'[]'); s.push(current); localStorage.setItem('fb',JSON.stringify(s)); toast('Saved!'); }
+</script>
+</body>
+</html>
