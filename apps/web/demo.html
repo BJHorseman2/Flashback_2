@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flashback Daily</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000; color: #fff; min-height: 100vh;
+            max-width: 430px; margin: 0 auto; overflow-x: hidden;
+        }
+        .screen { display: none; min-height: 100vh; }
+        .screen.active { display: flex; flex-direction: column; }
+
+        /* Home */
+        #home { justify-content: center; align-items: center; gap: 40px; padding: 20px; }
+        .logo h1 { font-size: 36px; font-weight: 700; letter-spacing: 4px; font-family: Georgia, serif; text-align: center; }
+        .logo p { font-size: 13px; color: #555; letter-spacing: 8px; margin-top: 8px; text-align: center; }
+        .actions { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        .action-btn {
+            display: flex; align-items: center; gap: 16px; padding: 16px 20px;
+            background: rgba(255,255,255,0.06); border: none; border-radius: 14px;
+            color: #fff; cursor: pointer; text-align: left; transition: all 0.2s;
+        }
+        .action-btn:active { transform: scale(0.98); background: rgba(255,255,255,0.1); }
+        .action-btn .icon { font-size: 22px; width: 32px; text-align: center; }
+        .action-btn .text h3 { font-size: 17px; font-weight: 600; }
+        .action-btn .text p { font-size: 12px; color: #666; margin-top: 2px; }
+        .action-btn .arrow { margin-left: auto; color: #444; font-size: 20px; }
+
+        /* Flashback */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 20px; position: sticky; top: 0; background: #000; z-index: 10;
+        }
+        .header button { background: none; border: none; color: #fff; font-size: 17px; cursor: pointer; padding: 8px; }
+        .header .back { font-size: 28px; }
+        .content { padding: 0 20px 40px; }
+        .date-label { text-align: center; font-size: 12px; color: #555; letter-spacing: 3px; margin-bottom: 16px; font-weight: 500; }
+
+        .lens-box {
+            position: relative; width: 100%; aspect-ratio: 16/10; border-radius: 16px;
+            overflow: hidden; background: #111; margin-bottom: 12px;
+        }
+        .lens-img {
+            width: 100%; height: 100%; object-fit: cover;
+            position: absolute; top: 0; left: 0;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .lens-img.active { opacity: 1; }
+
+        .dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 16px; }
+        .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); cursor: pointer; transition: all 0.3s;
+        }
+        .dot.active { background: #fff; width: 24px; border-radius: 4px; }
+
+        .pills { display: flex; justify-content: center; gap: 6px; margin-bottom: 28px; flex-wrap: wrap; }
+        .pill {
+            padding: 8px 14px; border-radius: 20px; background: rgba(255,255,255,0.08);
+            border: none; color: #999; font-size: 12px; cursor: pointer; transition: all 0.2s; font-weight: 500;
+        }
+        .pill.active { background: #fff; color: #000; font-weight: 600; }
+
+        .title {
+            font-size: 26px; font-weight: 700; font-family: Georgia, serif;
+            text-align: center; margin-bottom: 16px; line-height: 1.3;
+        }
+        .year-wrap { text-align: center; margin-bottom: 20px; }
+        .year {
+            display: inline-block; padding: 8px 20px; background: #fff; color: #000;
+            border-radius: 20px; font-size: 15px; font-weight: 700; font-family: 'SF Mono', 'Menlo', monospace;
+        }
+        .summary {
+            font-size: 16px; line-height: 1.7; color: rgba(255,255,255,0.8);
+            text-align: center; margin-bottom: 20px; padding: 0 10px;
+        }
+        .disclosure {
+            display: flex; align-items: center; justify-content: center;
+            gap: 6px; color: #555; font-size: 11px; margin-bottom: 28px;
+        }
+
+        .buttons { display: flex; justify-content: center; gap: 12px; }
+        .btn-secondary {
+            padding: 14px 24px; border-radius: 25px; background: rgba(255,255,255,0.08);
+            border: none; color: #fff; font-size: 14px; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; font-weight: 500;
+        }
+        .btn-primary {
+            padding: 14px 24px; border-radius: 25px; background: #fff;
+            border: none; color: #000; font-size: 14px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; gap: 8px;
+        }
+        .btn-secondary:active, .btn-primary:active { transform: scale(0.96); }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95); z-index: 100; padding: 20px;
+            max-width: 430px; margin: 0 auto;
+        }
+        .modal.active { display: block; }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-top: 20px; }
+        .modal-head h2 { font-size: 20px; font-weight: 600; }
+        .modal-close { background: none; border: none; color: #0a84ff; font-size: 17px; cursor: pointer; font-weight: 500; }
+        .source-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px; background: rgba(255,255,255,0.06); border-radius: 12px;
+            margin-bottom: 10px; color: #fff; text-decoration: none;
+        }
+        .source-item span:last-child { color: #0a84ff; }
+
+        /* Loading shimmer */
+        .loading-shimmer {
+            background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    </style>
+</head>
+<body>
+
+<!-- HOME SCREEN -->
+<div id="home" class="screen active">
+    <div class="logo">
+        <h1>FLASHBACK</h1>
+        <p>DAILY</p>
+    </div>
+    <div class="actions">
+        <button class="action-btn" onclick="showFlashback('apollo')">
+            <span class="icon">📅</span>
+            <div class="text"><h3>Today</h3><p>July 20</p></div>
+            <span class="arrow">›</span>
+        </button>
+        <button class="action-btn" onclick="showFlashback('berlin')">
+            <span class="icon">🗓️</span>
+            <div class="text"><h3>Pick a Date</h3><p>November 9, 1989</p></div>
+            <span class="arrow">›</span>
+        </button>
+        <button class="action-btn" onclick="showFlashback('wright')">
+            <span class="icon">🎲</span>
+            <div class="text"><h3>Random</h3><p>Surprise me</p></div>
+            <span class="arrow">›</span>
+        </button>
+        <button class="action-btn" onclick="showFlashback('titanic')">
+            <span class="icon">🎂</span>
+            <div class="text"><h3>My Birthday</h3><p>April 15</p></div>
+            <span class="arrow">›</span>
+        </button>
+    </div>
+</div>
+
+<!-- FLASHBACK SCREEN -->
+<div id="flashback" class="screen">
+    <div class="header">
+        <button class="back" onclick="goHome()">‹</button>
+        <button onclick="alert('Saved to your library!')">☆</button>
+    </div>
+    <div class="content">
+        <div class="date-label" id="dateLabel">JULY 20</div>
+
+        <div class="lens-box" id="lensBox"></div>
+
+        <div class="dots" id="dots"></div>
+
+        <div class="pills" id="pills"></div>
+
+        <h1 class="title" id="eventTitle"></h1>
+        <div class="year-wrap"><span class="year" id="eventYear"></span></div>
+        <p class="summary" id="eventSummary"></p>
+        <div class="disclosure"><span>✨</span><span>AI Recreation</span></div>
+
+        <div class="buttons">
+            <button class="btn-secondary" onclick="showSources()">🔗 Sources</button>
+            <button class="btn-primary" onclick="shareEvent()">↗ Share</button>
+        </div>
+    </div>
+</div>
+
+<!-- SOURCES MODAL -->
+<div class="modal" id="sourcesModal">
+    <div class="modal-head">
+        <h2>Sources</h2>
+        <button class="modal-close" onclick="closeSources()">Done</button>
+    </div>
+    <div id="sourcesList"></div>
+</div>
+
+<script>
+const events = {
+    apollo: {
+        date: 'JULY 20',
+        title: 'Apollo 11 Moon Landing',
+        year: '1969',
+        summary: 'NASA\'s Apollo 11 mission successfully landed the first humans on the Moon. Astronauts Neil Armstrong and Buzz Aldrin walked on the lunar surface while Michael Collins orbited above.',
+        sources: [
+            {label: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Apollo_11'},
+            {label: 'On this Day', url: 'https://en.wikipedia.org/wiki/Wikipedia:On_this_day'}
+        ],
+        lenses: [
+            {name: 'Wide', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Aldrin_Apollo_11_original.jpg/800px-Aldrin_Apollo_11_original.jpg'},
+            {name: 'POV', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Buzz_Aldrin_and_the_U.S._flag_on_the_Moon_-_GPN-2001-000012.jpg/800px-Buzz_Aldrin_and_the_U.S._flag_on_the_Moon_-_GPN-2001-000012.jpg'},
+            {name: 'Detail', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Apollo_11_bootprint.jpg/800px-Apollo_11_bootprint.jpg'},
+            {name: 'Behind', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Mission_control_Apollo_11.jpg/800px-Mission_control_Apollo_11.jpg'},
+            {name: 'After', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Apollo_11_Crew.jpg/800px-Apollo_11_Crew.jpg'}
+        ]
+    },
+    berlin: {
+        date: 'NOVEMBER 9',
+        title: 'Fall of the Berlin Wall',
+        year: '1989',
+        summary: 'The Berlin Wall fell after 28 years of dividing East and West Berlin. Thousands of East Germans crossed freely into West Berlin in scenes of jubilant celebration.',
+        sources: [
+            {label: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Fall_of_the_Berlin_Wall'},
+            {label: 'On this Day', url: 'https://en.wikipedia.org/wiki/Wikipedia:On_this_day'}
+        ],
+        lenses: [
+            {name: 'Wide', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/West_and_East_Germans_at_the_Brandenburg_Gate_in_1989.jpg/800px-West_and_East_Germans_at_the_Brandenburg_Gate_in_1989.jpg'},
+            {name: 'POV', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Thefalloftheberlinwall1989.JPG/800px-Thefalloftheberlinwall1989.JPG'},
+            {name: 'Detail', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Berlin_Wall_-_Segment_with_Graffiti.jpg/800px-Berlin_Wall_-_Segment_with_Graffiti.jpg'},
+            {name: 'Behind', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/BerlinWall-BrandenburgGate.jpg/800px-BerlinWall-BrandenburgGate.jpg'},
+            {name: 'After', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Remains_of_Berlin_Wall.jpg/800px-Remains_of_Berlin_Wall.jpg'}
+        ]
+    },
+    wright: {
+        date: 'DECEMBER 17',
+        title: 'Wright Brothers First Flight',
+        year: '1903',
+        summary: 'Orville and Wilbur Wright achieved the first sustained, controlled, powered heavier-than-air flight at Kitty Hawk. The flight lasted 12 seconds and covered 120 feet.',
+        sources: [
+            {label: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Wright_brothers'},
+            {label: 'On this Day', url: 'https://en.wikipedia.org/wiki/Wikipedia:On_this_day'}
+        ],
+        lenses: [
+            {name: 'Wide', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/First_flight2.jpg/800px-First_flight2.jpg'},
+            {name: 'POV', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/1909_Wright_Military_Flyer.jpg/800px-1909_Wright_Military_Flyer.jpg'},
+            {name: 'Detail', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Wright_1899_Kite.jpg/640px-Wright_1899_Kite.jpg'},
+            {name: 'Behind', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Wrightcycle.jpg/800px-Wrightcycle.jpg'},
+            {name: 'After', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Wright_Brothers_in_1910.jpg/800px-Wright_Brothers_in_1910.jpg'}
+        ]
+    },
+    titanic: {
+        date: 'APRIL 15',
+        title: 'Sinking of the Titanic',
+        year: '1912',
+        summary: 'RMS Titanic sank in the North Atlantic Ocean after striking an iceberg during her maiden voyage. Over 1,500 passengers and crew perished in one of the deadliest peacetime maritime disasters.',
+        sources: [
+            {label: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Sinking_of_the_Titanic'},
+            {label: 'On this Day', url: 'https://en.wikipedia.org/wiki/Wikipedia:On_this_day'}
+        ],
+        lenses: [
+            {name: 'Wide', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/RMS_Titanic_3.jpg/800px-RMS_Titanic_3.jpg'},
+            {name: 'POV', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Titanic_the_sinking.jpg/800px-Titanic_the_sinking.jpg'},
+            {name: 'Detail', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Titanic_lifeboat.jpg/800px-Titanic_lifeboat.jpg'},
+            {name: 'Behind', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Titanic_Newspaper.jpg/548px-Titanic_Newspaper.jpg'},
+            {name: 'After', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Titanic_Memorial%2C_Belfast%2C_April_2012_%2803%29.JPG/800px-Titanic_Memorial%2C_Belfast%2C_April_2012_%2803%29.JPG'}
+        ]
+    }
+};
+
+let currentEvent = null;
+let currentLens = 0;
+
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function goHome() { showScreen('home'); }
+
+function showFlashback(eventKey) {
+    currentEvent = events[eventKey];
+    currentLens = 0;
+
+    document.getElementById('dateLabel').textContent = currentEvent.date;
+    document.getElementById('eventTitle').textContent = currentEvent.title;
+    document.getElementById('eventYear').textContent = currentEvent.year;
+    document.getElementById('eventSummary').textContent = currentEvent.summary;
+
+    // Build lens images
+    const lensBox = document.getElementById('lensBox');
+    lensBox.innerHTML = currentEvent.lenses.map((lens, i) =>
+        `<img class="lens-img ${i === 0 ? 'active' : ''}" src="${lens.url}" alt="${lens.name}">`
+    ).join('');
+
+    // Build dots
+    document.getElementById('dots').innerHTML = currentEvent.lenses.map((_, i) =>
+        `<div class="dot ${i === 0 ? 'active' : ''}" onclick="selectLens(${i})"></div>`
+    ).join('');
+
+    // Build pills
+    document.getElementById('pills').innerHTML = currentEvent.lenses.map((lens, i) =>
+        `<button class="pill ${i === 0 ? 'active' : ''}" onclick="selectLens(${i})">${lens.name}</button>`
+    ).join('');
+
+    showScreen('flashback');
+    setupSwipe();
+}
+
+function selectLens(i) {
+    currentLens = i;
+    document.querySelectorAll('.lens-img').forEach((el, idx) => el.classList.toggle('active', idx === i));
+    document.querySelectorAll('.dot').forEach((el, idx) => el.classList.toggle('active', idx === i));
+    document.querySelectorAll('.pill').forEach((el, idx) => el.classList.toggle('active', idx === i));
+}
+
+function setupSwipe() {
+    const box = document.getElementById('lensBox');
+    let startX = 0;
+    box.ontouchstart = e => startX = e.touches[0].clientX;
+    box.ontouchend = e => {
+        const diff = startX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) {
+            if (diff > 0 && currentLens < 4) selectLens(currentLens + 1);
+            else if (diff < 0 && currentLens > 0) selectLens(currentLens - 1);
+        }
+    };
+}
+
+function showSources() {
+    document.getElementById('sourcesList').innerHTML = currentEvent.sources.map(s =>
+        `<a href="${s.url}" target="_blank" class="source-item"><span>${s.label}</span><span>↗</span></a>`
+    ).join('');
+    document.getElementById('sourcesModal').classList.add('active');
+}
+
+function closeSources() {
+    document.getElementById('sourcesModal').classList.remove('active');
+}
+
+function shareEvent() {
+    const text = `${currentEvent.title} (${currentEvent.year})\n\n${currentEvent.summary}\n\n✨ via Flashback Daily`;
+    if (navigator.share) {
+        navigator.share({text}).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(text);
+        alert('Copied to clipboard!');
+    }
+}
+</script>
+</body>
+</html>
