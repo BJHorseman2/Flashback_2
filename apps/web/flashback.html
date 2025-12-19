@@ -11,7 +11,6 @@
         .screen { display: none; min-height: 100vh; flex-direction: column; }
         .screen.active { display: flex; }
 
-        /* Home */
         #home { justify-content: center; align-items: center; gap: 32px; padding: 20px; }
         .logo h1 { font-size: 36px; font-weight: 700; letter-spacing: 4px; font-family: Georgia, serif; text-align: center; }
         .logo p { font-size: 13px; color: #555; letter-spacing: 8px; margin-top: 8px; text-align: center; }
@@ -24,7 +23,6 @@
         .action-btn .text p { font-size: 12px; color: #666; margin-top: 2px; }
         .action-btn .arrow { margin-left: auto; color: #444; font-size: 20px; }
 
-        /* Date Picker */
         #dateSection { width: 100%; display: none; flex-direction: column; gap: 16px; padding: 20px; background: rgba(255,255,255,0.08); border-radius: 16px; margin-top: 8px; }
         #dateSection.active { display: flex; }
         #dateSection label { color: #888; font-size: 13px; text-align: center; }
@@ -35,7 +33,6 @@
         #goBtn { background: #fff; color: #000; }
         #cancelBtn { background: rgba(255,255,255,0.1); color: #fff; }
 
-        /* Loading */
         .loading { display: none; flex-direction: column; align-items: center; gap: 16px; padding: 40px; }
         .loading.active { display: flex; }
         .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; }
@@ -44,17 +41,14 @@
         .error { display: none; padding: 16px; background: rgba(255,100,100,0.1); border-radius: 10px; margin-top: 16px; text-align: center; color: #ff6b6b; font-size: 14px; }
         .error.active { display: block; }
 
-        /* Flashback Screen */
         .header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; position: sticky; top: 0; background: #000; z-index: 10; }
         .header button { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; padding: 8px; }
         .content { padding: 0 20px 40px; }
         .date-label { text-align: center; font-size: 12px; color: #555; letter-spacing: 3px; margin-bottom: 16px; font-weight: 500; }
 
         .lens-box { position: relative; width: 100%; aspect-ratio: 16/10; border-radius: 16px; overflow: hidden; background: #111; margin-bottom: 12px; }
-        .lens-img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; opacity: 1; transition: opacity 0.3s; display: none; }
-        .lens-img.active { display: block; opacity: 1; }
-        .no-image { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a1a2e, #16213e); color: #666; font-size: 14px; gap: 8px; }
-        .no-image.hidden { display: none; }
+        .lens-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .lens-img.active { display: block; }
 
         .dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 16px; }
         .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); cursor: pointer; transition: all 0.3s; }
@@ -77,7 +71,6 @@
         .btn-secondary { background: rgba(255,255,255,0.08); color: #fff; }
         .btn-primary { background: #fff; color: #000; font-weight: 600; }
 
-        /* Modal */
         .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 100; padding: 20px; max-width: 430px; margin: 0 auto; overflow-y: auto; }
         .modal.active { display: block; }
         .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-top: 20px; }
@@ -88,12 +81,10 @@
 
         .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 25px; font-size: 14px; opacity: 0; transition: opacity 0.3s; }
         .toast.show { opacity: 1; }
-
     </style>
 </head>
 <body>
 
-<!-- HOME -->
 <div id="home" class="screen active">
     <div class="logo">
         <h1>FLASHBACK</h1>
@@ -103,7 +94,7 @@
     <div class="actions">
         <button class="action-btn" id="todayBtn">
             <span class="icon">📅</span>
-            <div class="text"><h3>Today in History</h3><p id="todayText">December 19</p></div>
+            <div class="text"><h3>Today in History</h3><p id="todayText"></p></div>
             <span class="arrow">›</span>
         </button>
 
@@ -139,27 +130,21 @@
     <div class="error" id="error"></div>
 </div>
 
-<!-- FLASHBACK -->
 <div id="flashback" class="screen">
     <div class="header">
         <button id="backBtn">‹</button>
-        <button id="saveBtn">☆</button>
+        <button id="shareBtn2">↗</button>
     </div>
     <div class="content">
         <div class="date-label" id="dateLabel"></div>
-        <div class="lens-box" id="lensBox">
-            <div class="no-image" id="noImage">
-                <span>🖼️</span>
-                <span>Generating images...</span>
-            </div>
-        </div>
+        <div class="lens-box" id="lensBox"></div>
         <div class="dots" id="dots"></div>
         <div class="pills" id="pills"></div>
         <h1 class="title" id="eventTitle"></h1>
         <div class="year-wrap"><span class="year" id="eventYear"></span></div>
         <p class="summary" id="eventSummary"></p>
-        <div class="source-badge" id="sourceBadge">📚 Source: History API</div>
-        <div class="disclosure"><span>✨</span><span id="imageType">Historical Photos</span></div>
+        <div class="source-badge">📚 Wikipedia</div>
+        <div class="disclosure"><span>✨</span><span>AI Generated Image</span></div>
         <div class="buttons">
             <button class="btn btn-secondary" id="sourcesBtn">🔗 Sources</button>
             <button class="btn btn-primary" id="shareBtn">↗ Share</button>
@@ -167,7 +152,6 @@
     </div>
 </div>
 
-<!-- SOURCES MODAL -->
 <div class="modal" id="modal">
     <div class="modal-head">
         <h2>Sources</h2>
@@ -179,313 +163,307 @@
 <div class="toast" id="toast"></div>
 
 <script>
-(function() {
-    let currentEvent = null;
-    let currentLens = 0;
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-    const $ = id => document.getElementById(id);
-    const home = $('home');
-    const flashback = $('flashback');
-    const loading = $('loading');
-    const loadingText = $('loadingText');
-    const error = $('error');
-    const dateSection = $('dateSection');
-    const monthSelect = $('monthSelect');
-    const daySelect = $('daySelect');
-    const yearSelect = $('yearSelect');
-    const modal = $('modal');
-    const toast = $('toast');
+let currentEvent = null;
+let currentLens = 0;
 
-    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+// DOM elements
+const homeScreen = document.getElementById('home');
+const flashbackScreen = document.getElementById('flashback');
+const loading = document.getElementById('loading');
+const loadingText = document.getElementById('loadingText');
+const errorEl = document.getElementById('error');
+const dateSection = document.getElementById('dateSection');
+const monthSelect = document.getElementById('monthSelect');
+const daySelect = document.getElementById('daySelect');
+const yearSelect = document.getElementById('yearSelect');
 
-    // Gemini API Key (embedded)
-    const GEMINI_API_KEY = 'AIzaSyBppISAb0RQFEKTbInWHvnMavGrfuH9UUo';
+// Initialize the app
+function init() {
+    const now = new Date();
 
-    // Data sources
-    const SOURCES = {
-        muffinlabs: {
-            name: 'History Database',
-            fetch: async (month, day) => {
-                const res = await fetch(`https://history.muffinlabs.com/date/${month}/${day}`);
-                const data = await res.json();
-                return data.data?.Events || [];
+    // Set today's date display
+    document.getElementById('todayText').textContent = `${MONTHS[now.getMonth()]} ${now.getDate()}`;
+
+    // Populate month dropdown
+    MONTHS.forEach((month, i) => {
+        const opt = document.createElement('option');
+        opt.value = i + 1;
+        opt.textContent = month;
+        if (i === now.getMonth()) opt.selected = true;
+        monthSelect.appendChild(opt);
+    });
+
+    // Populate day dropdown (1-31)
+    for (let d = 1; d <= 31; d++) {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        if (d === now.getDate()) opt.selected = true;
+        daySelect.appendChild(opt);
+    }
+
+    // Populate year dropdown (1900 to current year)
+    const currentYear = now.getFullYear();
+    for (let y = currentYear; y >= 1900; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        yearSelect.appendChild(opt);
+    }
+
+    // Event listeners
+    document.getElementById('todayBtn').onclick = () => {
+        const now = new Date();
+        fetchEvent(now.getMonth() + 1, now.getDate(), null);
+    };
+
+    document.getElementById('pickBtn').onclick = () => {
+        dateSection.classList.toggle('active');
+    };
+
+    document.getElementById('cancelBtn').onclick = () => {
+        dateSection.classList.remove('active');
+    };
+
+    document.getElementById('goBtn').onclick = () => {
+        const month = parseInt(monthSelect.value);
+        const day = parseInt(daySelect.value);
+        const year = parseInt(yearSelect.value);
+        fetchEvent(month, day, year);
+    };
+
+    document.getElementById('randomBtn').onclick = () => {
+        const month = Math.floor(Math.random() * 12) + 1;
+        const day = Math.floor(Math.random() * 28) + 1;
+        const year = 1900 + Math.floor(Math.random() * 124);
+        fetchEvent(month, day, year);
+    };
+
+    document.getElementById('backBtn').onclick = goHome;
+    document.getElementById('sourcesBtn').onclick = () => document.getElementById('modal').classList.add('active');
+    document.getElementById('closeModal').onclick = () => document.getElementById('modal').classList.remove('active');
+    document.getElementById('shareBtn').onclick = shareEvent;
+    document.getElementById('shareBtn2').onclick = shareEvent;
+}
+
+function showLoading(text) {
+    loading.classList.add('active');
+    loadingText.textContent = text;
+    errorEl.classList.remove('active');
+    dateSection.classList.remove('active');
+}
+
+function hideLoading() {
+    loading.classList.remove('active');
+}
+
+function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.classList.add('active');
+    hideLoading();
+}
+
+function goHome() {
+    homeScreen.classList.add('active');
+    flashbackScreen.classList.remove('active');
+}
+
+function showFlashback() {
+    homeScreen.classList.remove('active');
+    flashbackScreen.classList.add('active');
+}
+
+// Fetch event from Wikipedia On This Day API
+async function fetchEvent(month, day, targetYear) {
+    showLoading('Fetching historical events...');
+
+    try {
+        // Wikipedia On This Day API
+        const url = `https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${month}/${day}`;
+        const response = await fetch(url);
+
+        if (!response.ok) throw new Error('Failed to fetch events');
+
+        const data = await response.json();
+        const events = data.events || [];
+
+        if (events.length === 0) {
+            throw new Error('No events found for this date');
+        }
+
+        let selectedEvent;
+
+        if (targetYear !== null) {
+            // Find event matching the exact year
+            selectedEvent = events.find(e => e.year === targetYear);
+
+            // If no exact match, find closest year
+            if (!selectedEvent) {
+                events.sort((a, b) => Math.abs(a.year - targetYear) - Math.abs(b.year - targetYear));
+                selectedEvent = events[0];
             }
+        } else {
+            // No year specified - pick the most significant event (longest description)
+            events.sort((a, b) => (b.text?.length || 0) - (a.text?.length || 0));
+            selectedEvent = events[0];
+        }
+
+        // Get Wikipedia article title for the event
+        const page = selectedEvent.pages?.[0];
+        const title = page?.title || selectedEvent.text.substring(0, 50);
+        const wikiUrl = page?.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`;
+
+        // Store the event
+        currentEvent = {
+            month: month,
+            day: day,
+            year: selectedEvent.year,
+            title: title,
+            text: selectedEvent.text,
+            wikiUrl: wikiUrl
+        };
+
+        showLoading('Generating AI image...');
+
+        // Generate images based on the event
+        await displayEvent();
+
+    } catch (err) {
+        showError(err.message);
+    }
+}
+
+// Display the event
+async function displayEvent() {
+    // Set the date label
+    document.getElementById('dateLabel').textContent = `${MONTHS[currentEvent.month - 1]} ${currentEvent.day}`.toUpperCase();
+
+    // Set event details
+    document.getElementById('eventTitle').textContent = currentEvent.title;
+    document.getElementById('eventYear').textContent = currentEvent.year;
+    document.getElementById('eventSummary').textContent = currentEvent.text;
+
+    // Generate 5 AI images based on the event
+    const lensBox = document.getElementById('lensBox');
+    lensBox.innerHTML = '';
+
+    const lensNames = ['Wide', 'POV', 'Detail', 'Behind', 'After'];
+    const lensPrompts = [
+        `${currentEvent.text} ${currentEvent.year} wide establishing shot historical photograph`,
+        `${currentEvent.text} ${currentEvent.year} first person point of view historical`,
+        `${currentEvent.text} ${currentEvent.year} close up detail shot historical`,
+        `${currentEvent.text} ${currentEvent.year} behind the scenes candid historical`,
+        `${currentEvent.text} ${currentEvent.year} aftermath consequences historical photograph`
+    ];
+
+    // Create images using Pollinations AI
+    for (let i = 0; i < 5; i++) {
+        const img = document.createElement('img');
+        img.className = i === 0 ? 'lens-img active' : 'lens-img';
+        img.alt = lensNames[i];
+
+        // Use Pollinations.ai for AI-generated images
+        const prompt = encodeURIComponent(lensPrompts[i].substring(0, 200));
+        img.src = `https://image.pollinations.ai/prompt/${prompt}?width=800&height=500&seed=${currentEvent.year * 10 + i}&nologo=true`;
+
+        lensBox.appendChild(img);
+    }
+
+    // Create dots
+    const dots = document.getElementById('dots');
+    dots.innerHTML = lensNames.map((_, i) =>
+        `<div class="dot${i === 0 ? ' active' : ''}" data-index="${i}"></div>`
+    ).join('');
+
+    // Create pills
+    const pills = document.getElementById('pills');
+    pills.innerHTML = lensNames.map((name, i) =>
+        `<button class="pill${i === 0 ? ' active' : ''}" data-index="${i}">${name}</button>`
+    ).join('');
+
+    // Add click handlers for dots and pills
+    dots.onclick = (e) => {
+        if (e.target.dataset.index !== undefined) {
+            selectLens(parseInt(e.target.dataset.index));
         }
     };
 
-    function init() {
-        const now = new Date();
-        $('todayText').textContent = months[now.getMonth()] + ' ' + now.getDate();
-
-        // Populate dropdowns
-        months.forEach((m, i) => {
-            const opt = document.createElement('option');
-            opt.value = i + 1;
-            opt.textContent = m;
-            if (i === now.getMonth()) opt.selected = true;
-            monthSelect.appendChild(opt);
-        });
-
-        for (let d = 1; d <= 31; d++) {
-            const opt = document.createElement('option');
-            opt.value = d;
-            opt.textContent = d;
-            if (d === now.getDate()) opt.selected = true;
-            daySelect.appendChild(opt);
+    pills.onclick = (e) => {
+        if (e.target.dataset.index !== undefined) {
+            selectLens(parseInt(e.target.dataset.index));
         }
+    };
 
-        const currentYear = now.getFullYear();
-        for (let y = currentYear; y >= 1800; y--) {
-            const opt = document.createElement('option');
-            opt.value = y;
-            opt.textContent = y;
-            if (y === 1969) opt.selected = true;
-            yearSelect.appendChild(opt);
+    // Add swipe support
+    let touchStartX = 0;
+    lensBox.ontouchstart = (e) => { touchStartX = e.touches[0].clientX; };
+    lensBox.ontouchend = (e) => {
+        const diff = touchStartX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) {
+            selectLens(currentLens + (diff > 0 ? 1 : -1));
         }
+    };
 
-        // Event listeners
-        $('todayBtn').onclick = () => {
-            const d = new Date();
-            loadEvent(d.getMonth() + 1, d.getDate(), null);
-        };
+    // Set up sources modal
+    document.getElementById('sourcesList').innerHTML = `
+        <a href="${currentEvent.wikiUrl}" target="_blank" class="source-link">
+            <span>Wikipedia - ${currentEvent.title}</span>
+            <span>↗</span>
+        </a>
+    `;
 
-        $('pickBtn').onclick = () => dateSection.classList.toggle('active');
-        $('cancelBtn').onclick = () => dateSection.classList.remove('active');
+    currentLens = 0;
+    hideLoading();
+    showFlashback();
+}
 
-        $('goBtn').onclick = () => {
-            const m = parseInt(monthSelect.value);
-            const d = parseInt(daySelect.value);
-            const y = parseInt(yearSelect.value);
-            loadEvent(m, d, y);
-        };
+function selectLens(index) {
+    if (index < 0 || index > 4) return;
+    currentLens = index;
 
-        $('randomBtn').onclick = () => {
-            const m = Math.floor(Math.random() * 12) + 1;
-            const d = Math.floor(Math.random() * 28) + 1;
-            const y = Math.floor(Math.random() * (2020 - 1800)) + 1800;
-            loadEvent(m, d, y);
-        };
+    // Update images
+    document.querySelectorAll('.lens-img').forEach((img, i) => {
+        img.classList.toggle('active', i === index);
+    });
 
-        $('backBtn').onclick = goHome;
-        $('saveBtn').onclick = saveEvent;
-        $('sourcesBtn').onclick = () => modal.classList.add('active');
-        $('closeModal').onclick = () => modal.classList.remove('active');
-        $('shareBtn').onclick = shareEvent;
-    }
+    // Update dots
+    document.querySelectorAll('.dot').forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+    });
 
-    function showHome() {
-        home.classList.add('active');
-        flashback.classList.remove('active');
-    }
+    // Update pills
+    document.querySelectorAll('.pill').forEach((pill, i) => {
+        pill.classList.toggle('active', i === index);
+    });
+}
 
-    function showFlashback() {
-        home.classList.remove('active');
-        flashback.classList.add('active');
-    }
+function shareEvent() {
+    if (!currentEvent) return;
 
-    function goHome() {
-        showHome();
-        error.classList.remove('active');
-        loading.classList.remove('active');
-    }
+    const text = `On ${MONTHS[currentEvent.month - 1]} ${currentEvent.day}, ${currentEvent.year}:\n\n${currentEvent.text}\n\n✨ Flashback Daily`;
 
-    function showLoading(text = 'Finding historical events...') {
-        loading.classList.add('active');
-        loadingText.textContent = text;
-        error.classList.remove('active');
-        dateSection.classList.remove('active');
-        document.querySelectorAll('.action-btn').forEach(b => b.disabled = true);
-    }
-
-    function hideLoading() {
-        loading.classList.remove('active');
-        document.querySelectorAll('.action-btn').forEach(b => b.disabled = false);
-    }
-
-    function showError(msg) {
-        error.textContent = msg;
-        error.classList.add('active');
-    }
-
-    function showToast(msg) {
-        toast.textContent = msg;
+    if (navigator.share) {
+        navigator.share({ title: 'Flashback Daily', text: text });
+    } else {
+        navigator.clipboard.writeText(text);
+        const toast = document.getElementById('toast');
+        toast.textContent = 'Copied to clipboard!';
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 2000);
     }
+}
 
-    // Fetch events from multiple sources
-    async function fetchEvents(month, day) {
-        const events = await SOURCES.muffinlabs.fetch(month, day);
-        return events.map(e => ({
-            year: parseInt(e.year),
-            text: e.text,
-            links: e.links || [],
-            source: 'History Database'
-        }));
-    }
+function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+}
 
-    // Generate AI images using Pollinations.ai
-    function generateImages(eventTitle, eventYear, eventText) {
-        // Extract key words from the event text
-        const words = eventText.replace(/[^a-zA-Z0-9\s]/g, '').split(' ').slice(0, 8).join(' ');
-
-        const styles = [
-            'wide shot documentary photo',
-            'first person view photo',
-            'close up detail photo',
-            'behind the scenes photo',
-            'aftermath documentary photo'
-        ];
-
-        return styles.map((style, i) => {
-            const prompt = `${words} ${eventYear} ${style} historical`;
-            return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=500&seed=${eventYear + i}&nologo=true`;
-        });
-    }
-
-    async function loadEvent(month, day, targetYear = null) {
-        showLoading('Searching historical records...');
-
-        try {
-            const events = await fetchEvents(month, day);
-            if (!events.length) throw new Error('No events found for this date');
-
-            let selectedEvent;
-
-            if (targetYear) {
-                // Find exact year match or closest
-                const exactMatch = events.find(e => e.year === targetYear);
-                if (exactMatch) {
-                    selectedEvent = exactMatch;
-                } else {
-                    events.sort((a, b) => Math.abs(a.year - targetYear) - Math.abs(b.year - targetYear));
-                    selectedEvent = events[0];
-                }
-            } else {
-                // Get most recent significant event
-                events.sort((a, b) => b.year - a.year);
-                selectedEvent = events[0];
-            }
-
-            // Generate AI images
-            const images = generateImages(selectedEvent.text.substring(0, 100), selectedEvent.year, selectedEvent.text);
-            $('imageType').textContent = 'AI Generated Recreation';
-
-            currentEvent = {
-                month,
-                day,
-                year: selectedEvent.year,
-                title: selectedEvent.text.substring(0, 80),
-                summary: selectedEvent.text,
-                source: selectedEvent.source,
-                links: selectedEvent.links,
-                images
-            };
-
-            displayEvent();
-            showFlashback();
-        } catch (e) {
-            showError(e.message || 'Something went wrong');
-        }
-
-        hideLoading();
-    }
-
-    function displayEvent() {
-        currentLens = 0;
-
-        $('dateLabel').textContent = (months[currentEvent.month - 1] + ' ' + currentEvent.day).toUpperCase();
-        $('eventTitle').textContent = currentEvent.title;
-        $('eventYear').textContent = currentEvent.year;
-        $('eventSummary').textContent = currentEvent.summary;
-        $('sourceBadge').textContent = '📚 Source: ' + currentEvent.source;
-
-        const lensBox = $('lensBox');
-        lensBox.querySelectorAll('.lens-img').forEach(el => el.remove());
-
-        let hasImage = false;
-        const lensNames = ['Wide', 'POV', 'Detail', 'Behind', 'After'];
-
-        console.log('Images to load:', currentEvent.images);
-        currentEvent.images.forEach((url, i) => {
-            const img = document.createElement('img');
-            img.className = i === 0 ? 'lens-img active' : 'lens-img';
-            img.alt = lensNames[i];
-            img.onerror = () => {
-                // Fallback to Picsum if AI image fails
-                img.src = `https://picsum.photos/seed/${currentEvent.year}${i}/800/500`;
-            };
-            img.src = url;
-            lensBox.appendChild(img);
-            hasImage = true;
-        });
-
-        $('noImage').classList.toggle('hidden', hasImage);
-
-        $('dots').innerHTML = lensNames.map((_, i) =>
-            `<div class="dot${i === 0 ? ' active' : ''}" data-i="${i}"></div>`
-        ).join('');
-
-        $('pills').innerHTML = lensNames.map((name, i) =>
-            `<button class="pill${i === 0 ? ' active' : ''}" data-i="${i}">${name}</button>`
-        ).join('');
-
-        $('dots').onclick = e => {
-            if (e.target.dataset.i !== undefined) selectLens(parseInt(e.target.dataset.i));
-        };
-        $('pills').onclick = e => {
-            if (e.target.dataset.i !== undefined) selectLens(parseInt(e.target.dataset.i));
-        };
-
-        let startX;
-        lensBox.ontouchstart = e => { startX = e.touches[0].clientX; };
-        lensBox.ontouchend = e => {
-            const diff = startX - e.changedTouches[0].clientX;
-            if (Math.abs(diff) > 50) selectLens(currentLens + (diff > 0 ? 1 : -1));
-        };
-
-        // Build sources list
-        let sourcesHTML = `<a href="https://history.muffinlabs.com/" target="_blank" class="source-link"><span>History Database</span><span>↗</span></a>`;
-
-        if (currentEvent.links) {
-            currentEvent.links.forEach(link => {
-                sourcesHTML += `<a href="${link.link}" target="_blank" class="source-link"><span>${link.title}</span><span>↗</span></a>`;
-            });
-        }
-
-        $('sourcesList').innerHTML = sourcesHTML;
-    }
-
-    function selectLens(i) {
-        if (i < 0 || i > 4) return;
-        currentLens = i;
-
-        document.querySelectorAll('.lens-img').forEach((el, idx) => el.classList.toggle('active', idx === i));
-        document.querySelectorAll('.dot').forEach((el, idx) => el.classList.toggle('active', idx === i));
-        document.querySelectorAll('.pill').forEach((el, idx) => el.classList.toggle('active', idx === i));
-    }
-
-    function saveEvent() {
-        if (!currentEvent) return;
-        let saved = JSON.parse(localStorage.getItem('flashbacks') || '[]');
-        saved.push(currentEvent);
-        localStorage.setItem('flashbacks', JSON.stringify(saved));
-        showToast('Saved!');
-    }
-
-    function shareEvent() {
-        if (!currentEvent) return;
-        const text = `${currentEvent.title} (${currentEvent.year})\n\n${currentEvent.summary}\n\n✨ Flashback Daily`;
-
-        if (navigator.share) {
-            navigator.share({ title: 'Flashback Daily', text });
-        } else {
-            navigator.clipboard.writeText(text).then(() => showToast('Copied!'));
-        }
-    }
-
-    init();
-})();
+// Start the app
+init();
 </script>
 </body>
 </html>
