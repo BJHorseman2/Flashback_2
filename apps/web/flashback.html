@@ -324,18 +324,17 @@
         }));
     }
 
-    // Generate images with Gemini
+    // Generate images with Gemini Imagen 3
     async function generateImages(eventTitle, eventYear, eventText) {
         const apiKey = GEMINI_API_KEY;
-
         showLoading('Generating AI images...');
 
         const lensPrompts = [
-            `A wide establishing shot of: ${eventTitle} in ${eventYear}. ${eventText}. Photorealistic, historical accuracy, cinematic lighting.`,
-            `First-person POV perspective of someone witnessing: ${eventTitle} in ${eventYear}. Immersive, documentary style.`,
-            `Detailed close-up shot showing a key element of: ${eventTitle} in ${eventYear}. Sharp focus, dramatic lighting.`,
-            `Behind the scenes view of: ${eventTitle} in ${eventYear}. Candid, journalistic style.`,
-            `The aftermath or legacy of: ${eventTitle} in ${eventYear}. Reflective, historical documentary style.`
+            `Historical photograph from ${eventYear}: ${eventText}. Wide establishing shot, photorealistic, documentary style.`,
+            `Historical photograph from ${eventYear}: ${eventText}. First-person perspective, immersive viewpoint.`,
+            `Historical photograph from ${eventYear}: ${eventText}. Detailed close-up of key element.`,
+            `Historical photograph from ${eventYear}: ${eventText}. Behind the scenes candid shot.`,
+            `Historical photograph showing aftermath of: ${eventText}. Reflective documentary style.`
         ];
 
         const images = [];
@@ -344,35 +343,38 @@
             try {
                 showLoading(`Generating image ${i + 1} of 5...`);
 
+                // Use Imagen 3 API
                 const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+                    `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            contents: [{
-                                parts: [{ text: `Generate an image: ${lensPrompts[i]}` }]
-                            }],
-                            generationConfig: {
-                                responseModalities: ["TEXT", "IMAGE"]
+                            instances: [{ prompt: lensPrompts[i] }],
+                            parameters: {
+                                sampleCount: 1,
+                                aspectRatio: "16:9"
                             }
                         })
                     }
                 );
 
                 const data = await response.json();
+                console.log('Imagen response:', data);
 
-                // Extract image from response
-                if (data.candidates?.[0]?.content?.parts) {
-                    for (const part of data.candidates[0].content.parts) {
-                        if (part.inlineData?.mimeType?.startsWith('image/')) {
-                            images.push(`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`);
-                            break;
-                        }
-                    }
+                // Check for errors
+                if (data.error) {
+                    console.error('API Error:', data.error.message);
+                    // Try fallback to Gemini 2.0 Flash
+                    const fallbackImg = await tryGeminiFlash(lensPrompts[i], apiKey);
+                    images.push(fallbackImg);
+                    continue;
                 }
 
-                if (images.length <= i) {
+                // Extract image from Imagen response
+                if (data.predictions?.[0]?.bytesBase64Encoded) {
+                    images.push(`data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`);
+                } else {
                     images.push(null);
                 }
             } catch (e) {
@@ -382,6 +384,37 @@
         }
 
         return images;
+    }
+
+    // Fallback to Gemini 2.0 Flash for image generation
+    async function tryGeminiFlash(prompt, apiKey) {
+        try {
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `Create an image: ${prompt}` }] }],
+                        generationConfig: { responseModalities: ["IMAGE"] }
+                    })
+                }
+            );
+
+            const data = await response.json();
+            console.log('Gemini Flash response:', data);
+
+            if (data.candidates?.[0]?.content?.parts) {
+                for (const part of data.candidates[0].content.parts) {
+                    if (part.inlineData?.mimeType?.startsWith('image/')) {
+                        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Gemini Flash error:', e);
+        }
+        return null;
     }
 
     async function loadEvent(month, day, targetYear = null) {
