@@ -51,8 +51,8 @@
         .date-label { text-align: center; font-size: 12px; color: #555; letter-spacing: 3px; margin-bottom: 16px; font-weight: 500; }
 
         .lens-box { position: relative; width: 100%; aspect-ratio: 16/10; border-radius: 16px; overflow: hidden; background: #111; margin-bottom: 12px; }
-        .lens-img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; opacity: 0; transition: opacity 0.3s; }
-        .lens-img.active { opacity: 1; }
+        .lens-img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; opacity: 1; transition: opacity 0.3s; display: none; }
+        .lens-img.active { display: block; opacity: 1; }
         .no-image { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a1a2e, #16213e); color: #666; font-size: 14px; gap: 8px; }
         .no-image.hidden { display: none; }
 
@@ -399,13 +399,16 @@
         let hasImage = false;
         const lensNames = ['Wide', 'POV', 'Detail', 'Behind', 'After'];
 
+        console.log('Images to load:', currentEvent.images);
         currentEvent.images.forEach((url, i) => {
             const img = document.createElement('img');
-            img.className = 'lens-img' + (i === 0 ? ' active' : '');
+            img.className = i === 0 ? 'lens-img active' : 'lens-img';
             img.alt = lensNames[i];
             img.src = url;
+            img.crossOrigin = 'anonymous';
             lensBox.appendChild(img);
             hasImage = true;
+            console.log('Added image:', i, url, img.className);
         });
 
         $('noImage').classList.toggle('hidden', hasImage);
