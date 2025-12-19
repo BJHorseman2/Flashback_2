@@ -89,12 +89,6 @@
         .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 25px; font-size: 14px; opacity: 0; transition: opacity 0.3s; }
         .toast.show { opacity: 1; }
 
-        /* API Key Input */
-        .api-section { width: 100%; padding: 16px; background: rgba(255,255,255,0.04); border-radius: 12px; margin-top: 20px; }
-        .api-section label { display: block; color: #888; font-size: 12px; margin-bottom: 8px; }
-        .api-section input { width: 100%; padding: 12px; border: 1px solid #333; border-radius: 8px; background: #111; color: #fff; font-size: 14px; }
-        .api-section small { display: block; color: #555; font-size: 11px; margin-top: 8px; }
-        .api-section a { color: #0a84ff; }
     </style>
 </head>
 <body>
@@ -143,12 +137,6 @@
     </div>
 
     <div class="error" id="error"></div>
-
-    <div class="api-section">
-        <label>Gemini API Key (optional - for AI images)</label>
-        <input type="password" id="apiKey" placeholder="Enter your Gemini API key">
-        <small>Get free key: <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a></small>
-    </div>
 </div>
 
 <!-- FLASHBACK -->
@@ -162,7 +150,7 @@
         <div class="lens-box" id="lensBox">
             <div class="no-image" id="noImage">
                 <span>🖼️</span>
-                <span>Add Gemini API key for AI images</span>
+                <span>Generating images...</span>
             </div>
         </div>
         <div class="dots" id="dots"></div>
@@ -205,11 +193,13 @@
     const monthSelect = $('monthSelect');
     const daySelect = $('daySelect');
     const yearSelect = $('yearSelect');
-    const apiKeyInput = $('apiKey');
     const modal = $('modal');
     const toast = $('toast');
 
     const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+    // Gemini API Key (embedded)
+    const GEMINI_API_KEY = 'AIzaSyBppISAb0RQFEKTbInWHvnMavGrfuH9UUo';
 
     // Data sources
     const SOURCES = {
@@ -226,15 +216,6 @@
     function init() {
         const now = new Date();
         $('todayText').textContent = months[now.getMonth()] + ' ' + now.getDate();
-
-        // Load saved API key
-        const savedKey = localStorage.getItem('gemini_api_key');
-        if (savedKey) apiKeyInput.value = savedKey;
-
-        // Save API key on change
-        apiKeyInput.onchange = () => {
-            localStorage.setItem('gemini_api_key', apiKeyInput.value);
-        };
 
         // Populate dropdowns
         months.forEach((m, i) => {
@@ -345,8 +326,7 @@
 
     // Generate images with Gemini
     async function generateImages(eventTitle, eventYear, eventText) {
-        const apiKey = apiKeyInput.value.trim();
-        if (!apiKey) return [null, null, null, null, null];
+        const apiKey = GEMINI_API_KEY;
 
         showLoading('Generating AI images...');
 
@@ -404,32 +384,6 @@
         return images;
     }
 
-    // Search for historical images from Commons
-    async function searchHistoricalImages(title, year) {
-        try {
-            const searchTerms = title.split(' ').slice(0, 4).join(' ');
-            const url = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchTerms + ' ' + year)}&srnamespace=6&srlimit=5&format=json&origin=*`;
-
-            const res = await fetch(url);
-            const data = await res.json();
-
-            const images = [];
-            if (data.query?.search) {
-                for (const result of data.query.search) {
-                    const fileName = result.title.replace('File:', '');
-                    const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(fileName)}?width=800`;
-                    images.push(imageUrl);
-                    if (images.length >= 5) break;
-                }
-            }
-
-            while (images.length < 5) images.push(null);
-            return images;
-        } catch {
-            return [null, null, null, null, null];
-        }
-    }
-
     async function loadEvent(month, day, targetYear = null) {
         showLoading('Searching historical records...');
 
@@ -454,18 +408,9 @@
                 selectedEvent = events[0];
             }
 
-            // Try to get images
-            let images;
-            const hasApiKey = apiKeyInput.value.trim();
-
-            if (hasApiKey) {
-                images = await generateImages(selectedEvent.text.substring(0, 100), selectedEvent.year, selectedEvent.text);
-                $('imageType').textContent = 'AI Generated Recreation';
-            } else {
-                showLoading('Finding historical photos...');
-                images = await searchHistoricalImages(selectedEvent.text.substring(0, 50), selectedEvent.year);
-                $('imageType').textContent = 'Historical Photos from Wikimedia';
-            }
+            // Generate AI images with Gemini
+            const images = await generateImages(selectedEvent.text.substring(0, 100), selectedEvent.year, selectedEvent.text);
+            $('imageType').textContent = 'AI Generated Recreation';
 
             currentEvent = {
                 month,
